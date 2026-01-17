@@ -20,7 +20,7 @@ interface BookingSlot {
   duration: number
 }
 
-type Step = 'personal' | 'service' | 'barber' | 'datetime'
+type Step = 'personal' | 'service' | 'barber' | 'datetime' | 'confirm'
 
 const BASE_SLOT = 30 // minutos
 
@@ -90,7 +90,8 @@ function BookingPageContent() {
     { id: 'personal' as Step, label: 'Seus Dados', icon: User },
     { id: 'service' as Step, label: 'Serviço', icon: Scissors },
     { id: 'barber' as Step, label: 'Barbeiro', icon: User },
-    { id: 'datetime' as Step, label: 'Data e Hora', icon: Calendar }
+    { id: 'datetime' as Step, label: 'Data e Hora', icon: Calendar },
+    { id: 'confirm' as Step, label: 'Confirmar', icon: CheckCircle }
   ]
 
   const generateDates = () => {
@@ -216,7 +217,7 @@ function BookingPageContent() {
       
       setShowSuccess(true)
       setTimeout(() => {
-        setShowSuccess(false)
+        window.location.href = '/'
       }, 3000)
       
     } catch (error) {
@@ -461,6 +462,93 @@ function BookingPageContent() {
             </div>
           )}
 
+          {currentStep === 'confirm' && (
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-6">Confirme seu Agendamento</h2>
+              
+              <div className="space-y-6">
+                {/* Dados Pessoais */}
+                <div className="bg-neutral-700 rounded-lg p-4">
+                  <div className="flex items-center mb-3">
+                    <User className="w-5 h-5 text-blue-500 mr-2" />
+                    <h3 className="font-medium text-white">Dados Pessoais</h3>
+                  </div>
+                  <div className="space-y-2 ml-7">
+                    <p className="text-gray-300">
+                      <span className="text-gray-400">Nome:</span> <span className="text-white font-medium">{formData.name}</span>
+                    </p>
+                    <p className="text-gray-300">
+                      <span className="text-gray-400">Telefone:</span> <span className="text-white font-medium">{formData.phone}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Serviço */}
+                {selectedService && (
+                  <div className="bg-neutral-700 rounded-lg p-4">
+                    <div className="flex items-center mb-3">
+                      <Scissors className="w-5 h-5 text-blue-500 mr-2" />
+                      <h3 className="font-medium text-white">Serviço</h3>
+                    </div>
+                    <div className="ml-7">
+                      <p className="text-white font-medium">{selectedService.name}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <p className="text-gray-400 text-sm">Duração: {selectedService.duration} min</p>
+                        <p className="text-blue-400 font-semibold">{selectedService.price}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Barbeiro */}
+                {selectedBarber && (
+                  <div className="bg-neutral-700 rounded-lg p-4">
+                    <div className="flex items-center mb-3">
+                      <User className="w-5 h-5 text-blue-500 mr-2" />
+                      <h3 className="font-medium text-white">Barbeiro</h3>
+                    </div>
+                    <div className="flex items-center ml-7">
+                      <img
+                        src={selectedBarber.image}
+                        alt={selectedBarber.name}
+                        className="w-12 h-12 rounded-full object-cover mr-3"
+                      />
+                      <div>
+                        <p className="text-white font-medium">{selectedBarber.name}</p>
+                        <p className="text-gray-400 text-sm">{selectedBarber.specialty}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Data e Horário */}
+                {formData.date && formData.time && (
+                  <div className="bg-neutral-700 rounded-lg p-4">
+                    <div className="flex items-center mb-3">
+                      <Calendar className="w-5 h-5 text-blue-500 mr-2" />
+                      <h3 className="font-medium text-white">Data e Horário</h3>
+                    </div>
+                    <div className="space-y-2 ml-7">
+                      <p className="text-gray-300">
+                        <span className="text-gray-400">Data:</span> <span className="text-white font-medium">{getSelectedDate()?.fullLabel}</span>
+                      </p>
+                      <p className="text-gray-300">
+                        <span className="text-gray-400">Horário:</span> <span className="text-white font-medium">{formData.time}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Aviso */}
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                  <p className="text-blue-300 text-sm">
+                    ⚠️ Ao confirmar, você receberá uma notificação com os detalhes do seu agendamento.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8">
             <Button
@@ -476,7 +564,7 @@ function BookingPageContent() {
               Anterior
             </Button>
 
-            {currentStep !== 'datetime' ? (
+            {currentStep !== 'confirm' ? (
               <Button
                 onClick={() => {
                   const currentIndex = getCurrentStepIndex()
@@ -487,7 +575,8 @@ function BookingPageContent() {
                 disabled={
                   (currentStep === 'personal' && !canProceedFromPersonal) ||
                   (currentStep === 'service' && !canProceedFromService) ||
-                  (currentStep === 'barber' && !canProceedFromBarber)
+                  (currentStep === 'barber' && !canProceedFromBarber) ||
+                  (currentStep === 'datetime' && !canProceedFromDateTime)
                 }
               >
                 Próximo
@@ -496,27 +585,15 @@ function BookingPageContent() {
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={!canProceedFromDateTime || isSubmitting}
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700"
               >
                 {isSubmitting ? 'Confirmando...' : 'Confirmar Agendamento'}
+                <CheckCircle className="w-4 h-4 ml-2" />
               </Button>
             )}
           </div>
         </div>
-
-        {/* Summary */}
-        {(selectedService || selectedBarber || formData.date || formData.time) && (
-          <div className="bg-neutral-800 rounded-lg p-6 mt-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Resumo do Agendamento</h3>
-            <div className="space-y-2 text-sm">
-              {formData.name && <p className="text-gray-300">Cliente: <span className="text-white">{formData.name}</span></p>}
-              {selectedService && <p className="text-gray-300">Serviço: <span className="text-white">{selectedService.name} - {selectedService.price}</span></p>}
-              {selectedBarber && <p className="text-gray-300">Barbeiro: <span className="text-white">{selectedBarber.name}</span></p>}
-              {formData.date && <p className="text-gray-300">Data: <span className="text-white">{getSelectedDate()?.fullLabel}</span></p>}
-              {formData.time && <p className="text-gray-300">Horário: <span className="text-white">{formData.time}</span></p>}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

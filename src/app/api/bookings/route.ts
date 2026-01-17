@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/lib/database'
+import { sendBookingNotification } from '@/lib/telegram'
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +74,41 @@ export async function POST(request: NextRequest) {
     `
     
     console.log('[Booking] Agendamento criado com sucesso:', result[0].id)
+    
+    // Buscar informações completas do agendamento para notificação
+    const bookingDetails = await sql`
+      SELECT 
+        b.client_name,
+        b.client_phone,
+        b.date,
+        b.start_time,
+        b.end_time,
+        ba.name as barber_name,
+        s.name as service_name
+      FROM bookings b
+      JOIN barbers ba ON b.barber_id = ba.id
+      JOIN services s ON b.service_id = s.id
+      WHERE b.id = ${result[0].id}
+    `
+    
+    // Enviar notificação no Telegram se for para Lima ou Rute
+    if (bookingDetails.length > 0) {
+      const booking = bookingDetails[0]
+      const barberNameLower = booking.barber_name.toLowerCase()
+      
+      if (barberNameLower.includes('lima') || barberNameLower.includes('rute')) {
+        console.log(`[Booking] Enviando notificação para o Telegram (marcação para ${booking.barber_name})`)
+        await sendBookingNotification({
+          clientName: booking.client_name,
+          clientPhone: booking.client_phone,
+          barberName: booking.barber_name,
+          serviceName: booking.service_name,
+          date: booking.date,
+          startTime: booking.start_time,
+          endTime: booking.end_time
+        })
+      }
+    }
     
     return NextResponse.json({ 
       bookingId: result[0].id,

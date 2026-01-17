@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "telegram-bot": "node telegram-bot.js",
+    "setup-webhook": "node setup-telegram-webhook.js",
+    "delete-webhook": "node setup-telegram-webhook.js delete"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
@@ -18,6 +21,7 @@
     "lucide-react": "^0.468.0",
     "next": "16.1.3",
     "next-auth": "^5.0.0-beta.30",
+    "node-telegram-bot-api": "^0.67.0",
     "pg": "^8.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
